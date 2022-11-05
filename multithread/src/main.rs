@@ -5,11 +5,9 @@ use text_io::read;
 
 fn main() {
     for i in 1..10 {
-        //thread::spawn(move || {
-        thread::spawn(|| {
+        thread::spawn(move || {
             for j in 1..20 {
-                //println!("thread: {}, number: {}", i, j);
-                println!("thread");
+                println!("thread: {}, number: {}", i, j);
             }
         });
     }
