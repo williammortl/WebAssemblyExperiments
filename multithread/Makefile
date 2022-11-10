@@ -10,7 +10,7 @@ clean:
 	rm -rf target
 
 run-wasm:
-	RUST_BACKTRACE=1 WASMTIME_BACKTRACE_DETAILS=1 wasmtime target/wasm32-wasi/debug/multithread.wasm
+	wasmtime --enable-threads target/wasm32-wasi/debug/multithread.wasm
 
 run-x86:
 	./target/debug/multithread

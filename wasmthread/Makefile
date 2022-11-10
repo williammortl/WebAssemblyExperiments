@@ -1,7 +1,7 @@
-all: clean build build-wasm
+all: clean build
 
 build: src/main.rs
-	cargo +nightly build --target wasm32-wasi
+	cargo +nightly build
 
 clean:
 	rm -rf target
