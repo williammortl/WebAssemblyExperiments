@@ -1,0 +1,2 @@
+/mnt/e/Code/wasmtime/target/release/wasmtime --wasm threads --wasi threads ./threads.wasm
+
