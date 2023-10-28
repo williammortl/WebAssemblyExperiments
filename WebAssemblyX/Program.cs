@@ -4,7 +4,8 @@ using Wasmtime;
 var wasi = new WasiConfiguration()
     .WithInheritedStandardInput()
     .WithInheritedStandardOutput()
-    .WithInheritedStandardError();
+    .WithInheritedStandardError()
+    .WithArg("--wasi threads");
 var config = new Config()
     .WithWasmThreads(true)
     .WithBulkMemory(true)
@@ -23,7 +24,7 @@ using var module = Module.FromText(
 );
 */
 
-//using var module = Module.FromFile(engine, "hello-world.wasm");
+// using var module = Module.FromFile(engine, "hello-world.wasm");
 using var module = Module.FromFile(engine, "threads.wasm");
 
 /*

@@ -3,3 +3,4 @@ multithread/target/
 wasmthread/target/
 WebAssemblyX/bin/
 WebAssemblyX/obj/
+.vs/

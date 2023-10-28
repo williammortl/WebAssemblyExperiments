@@ -1,2 +1,22 @@
 /mnt/e/Code/wasmtime/target/release/wasmtime --wasm threads --wasi threads ./threads.wasm
 
+Tasks to do:
+
+- run multithreaded wasm using wasmtime-dotnet
+- see if I can catch a callback from when thread create is called
+- find where variables are looked up by name and pushed on to the stack
+- see if I can catch a callback with variable name on lookup
+- find way to find execution location (in store or enginee) when variable is looked up or thread created
+    - analyze way to pass state
+    - build serialization for the executing program
+- build service
+    - build interface to bytecode runtimes
+    - build wrapper runtime for altered wasmtime
+        - test multithreaded program
+        - test variable retrieval
+    - build endpoint for available resources for the pc
+    - build status endpoint
+    - build endpoint for variable lookup
+    - build endpoint for memory read/write
+    - build endpoint for thread migrate
+
