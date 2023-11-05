@@ -1,6 +1,38 @@
-/mnt/e/Code/wasmtime/target/release/wasmtime --wasm threads --wasi threads ./threads.wasm
+---------------
+Wasmtime notes:
+---------------
 
+run threads from command line: /mnt/e/Code/wasmtime/target/release/wasmtime --wasm threads --wasi threads ./threads.wasm
+
+from command line:
+
+    old_cli.rs enables wasi_threads on line 983
+
+    cli-flags/libs.rs has struct called WasiOptions with field called threads for wasi threading api on line 235
+
+    run.rs links wasi_threads near line 656
+
+    *crates/wasi-threads/src/lib.rs contains the thread generation function
+
+from C# library:
+
+    Store.cs contains calls into wasmtime C api for setting up wasi
+
+    Function.cs contains the Invoke method which calls into the wasmtime C api function wasmtime_func_call
+
+    In wasmtime C library (crates/c-api):
+
+        func.rs contains wasmtime_func_call on line 318
+
+--------------
+Big questions:
+--------------
+
+Should I create a new C api function that enables wasi threads by linking wasi-threads in a similar manner?
+
+------------
 Tasks to do:
+------------
 
 - run multithreaded wasm using wasmtime-dotnet
 - see if I can catch a callback from when thread create is called
