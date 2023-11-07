@@ -4,15 +4,27 @@ Wasmtime notes:
 
 run threads from command line: /mnt/e/Code/wasmtime/target/release/wasmtime --wasm threads --wasi threads ./threads.wasm
 
+*crates/wasi-threads/src/lib.rs contains the thread generation function
+
 from command line:
 
     old_cli.rs enables wasi_threads on line 983
 
-    cli-flags/libs.rs has struct called WasiOptions with field called threads for wasi threading api on line 235
+        WasiOptions in crates/cli-flags/lib.rs::WasiOptions contains option threads on line 235
 
-    run.rs links wasi_threads near line 656
+    *run.rs in function populate_with_wasi links wasi_threads near line 656
 
-    *crates/wasi-threads/src/lib.rs contains the thread generation function
+        RunCommand::Execute calls -> RunCommand::
+
+    following run call chain...
+
+        either invoke_func on line 477 | 
+        
+            load_main_module on line 379 (falls through to invoke_func)
+
+                default function precedence in a wasm module is _initialize then _start
+        
+        invoke_func calls call from Func in wasmtime/func.rs
 
 from C# library:
 
@@ -22,7 +34,95 @@ from C# library:
 
     In wasmtime C library (crates/c-api):
 
-        func.rs contains wasmtime_func_call on line 318
+        func.rs contains crates/c-api/wasmtime_func_call on line 318
+
+        call call from Func in wasmtime/func.rs on line 342
+
+*The link between the two is wasmtime/func.rs::Func::call on line 842
+
+    after several more call layers hit invoke_wasm_and_catch_traps on line 1360
+
+        store seems to be the most important variable
+
+        crates/runtime/traphandlers.rs::wasmtime_runtime::catch_traps on line 1371 actually runs the wasm
+
+            CallThreadState::new on line 304 does the magic
+
+In C#
+
+    wasm threads enabled with Config::WithWasmThreads(true)
+
+        calls wasmtime_config_wasm_threads_set in crates/c-api/config.rs on line 74, enables wasm threads
+    
+    Config -> Engine -> Store.SetWasiConfiguration(WasiConfiguration)
+
+        Store::SetWasiConfiguration -> StoreContext::SetWasiConfiguration -> wasmtime_context_set_wasi in crates/c-api/store.cs on line 197
+
+        To build native config:
+
+            internal Handle Build()
+            {
+                var config = new Handle(Native.wasi_config_new());
+
+                SetConfigArgs(config);
+                SetEnvironmentVariables(config);
+                SetStandardIn(config);
+                SetStandardOut(config);
+                SetStandardError(config);
+                SetPreopenDirectories(config);
+
+                return config;
+            }
+
+        Struct in Rust was:
+
+            pub struct wasi_config_t {
+                args: Vec<Vec<u8>>,
+                env: Vec<(Vec<u8>, Vec<u8>)>,
+                stdin: WasiConfigReadPipe,
+                stdout: WasiConfigWritePipe,
+                stderr: WasiConfigWritePipe,
+                preopen_dirs: Vec<(Dir, PathBuf)>,
+                preopen_sockets: HashMap<u32, TcpListener>,
+                inherit_args: bool,
+                inherit_env: bool,
+            }
+
+    Engine -> Linker
+
+wasmtime_linker_define_instance in crates/c-api/linker.rs on line 117
+    
+    above is what is called before wasmtime_func_call
+
+---------
+Strategy:
+---------
+
+In WasiConfiguration
+
+	ADD internal property WasiThreads
+
+	ADD WasiConfiguration::WithWasiThreads()
+	
+		have it set WasiThreads to true
+
+In Engine 
+
+	ADD public property WasiConfig
+
+In Store::SetWasiConfiguration()
+
+	since by this time store has an engine, set Engine::WasiConfig
+
+in crates/c-api/linker.rs add new function "add_wasi_threads"
+
+	use linker to link wasi threads similar as in the run.rs file
+
+In Linker
+
+	ADD Linker::Native::add_wasi_threads
+
+	In constructor Linker(Engine engine) call into Native::add_wasi_threads if needed to turn on threads
 
 --------------
 Big questions:
@@ -30,10 +130,19 @@ Big questions:
 
 Should I create a new C api function that enables wasi threads by linking wasi-threads in a similar manner?
 
+Where is memory write and retrieve taking place?
+
+Copy on execute?
+
+How best to serialize store / engine?
+
 ------------
 Tasks to do:
 ------------
 
+- pass callback to rust code from C# and call back into C#
+- implement c-api changes
+- implment wastime-dotnet changes
 - run multithreaded wasm using wasmtime-dotnet
 - see if I can catch a callback from when thread create is called
 - find where variables are looked up by name and pushed on to the stack
@@ -41,9 +150,10 @@ Tasks to do:
 - find way to find execution location (in store or enginee) when variable is looked up or thread created
     - analyze way to pass state
     - build serialization for the executing program
+    - create way to resume running at location
 - build service
     - build interface to bytecode runtimes
-    - build wrapper runtime for altered wasmtime
+    - build wrapper runtime for altered wasmtime c-api
         - test multithreaded program
         - test variable retrieval
     - build endpoint for available resources for the pc
@@ -51,4 +161,3 @@ Tasks to do:
     - build endpoint for variable lookup
     - build endpoint for memory read/write
     - build endpoint for thread migrate
-
